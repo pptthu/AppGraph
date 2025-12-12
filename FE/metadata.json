@@ -1,0 +1,5 @@
+{
+  "name": "GraphViz Master",
+  "description": "A comprehensive educational tool for visualizing graph algorithms including Dijkstra, BFS, DFS, and more with interactive creation and step-by-step playback.",
+  "requestFramePermissions": []
+}
