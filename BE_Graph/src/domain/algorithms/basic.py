@@ -1,32 +1,22 @@
 from collections import deque
 
-# --- HÀM BỔ TRỢ: Tạo danh sách kề ---
+# --- HÀM BỔ TRỢ ---
 def build_adjacency_list(nodes, edges, is_directed):
     adj = {node['id']: [] for node in nodes}
     for e in edges:
         source, target, weight = e['source'], e['target'], e.get('weight', 1)
-        
-        # Thêm cạnh xuôi
         if source in adj:
             adj[source].append({'neighbor': target, 'weight': weight})
-        
-        # Nếu vô hướng, thêm cạnh ngược
         if not is_directed and target in adj:
             adj[target].append({'neighbor': source, 'weight': weight})
-            
-    # Sắp xếp để duyệt thứ tự ổn định (A->B->C)
     for node_id in adj:
         adj[node_id].sort(key=lambda x: x['neighbor'])
-        
     return adj
 
-# =======================================================
-# 1. BFS (DUYỆT CHIỀU RỘNG) - ĐÃ DÙNG KEY: structure
-# =======================================================
+# 1. BFS
 def run_bfs(nodes, edges, start_node, end_node=None, is_directed=False):
     steps = []
     adj = build_adjacency_list(nodes, edges, is_directed)
-    
     queue = deque([start_node])
     visited = [start_node] 
     
@@ -35,18 +25,17 @@ def run_bfs(nodes, edges, start_node, end_node=None, is_directed=False):
         "visitedNodes": list(visited),
         "currentNodeId": start_node,
         "selectedEdges": [],
-        "structure": list(queue) # <-- Dùng key 'structure'
+        "structure": list(queue)
     })
 
     while queue:
         u = queue.popleft()
-        
         steps.append({
             "description": f"Lấy {u} ra khỏi hàng đợi để xét.",
             "visitedNodes": list(visited),
             "currentNodeId": u,
             "selectedEdges": [],
-            "structure": list(queue) # <-- Dùng key 'structure'
+            "structure": list(queue)
         })
 
         for item in adj.get(u, []):
@@ -54,13 +43,12 @@ def run_bfs(nodes, edges, start_node, end_node=None, is_directed=False):
             if v not in visited:
                 visited.append(v)
                 queue.append(v)
-                
                 steps.append({
                     "description": f"  -> Tìm thấy {v} (kề {u}), đưa vào hàng đợi.",
                     "visitedNodes": list(visited),
                     "currentNodeId": u,
                     "selectedEdges": [{"source": u, "target": v}],
-                    "structure": list(queue) # <-- Dùng key 'structure'
+                    "structure": list(queue)
                 })
 
     steps.append({
@@ -68,18 +56,14 @@ def run_bfs(nodes, edges, start_node, end_node=None, is_directed=False):
         "visitedNodes": list(visited),
         "currentNodeId": None,
         "selectedEdges": [],
-        "structure": list(queue) # <-- Dùng key 'structure' (là mảng rỗng)
+        "structure": list(queue)
     })
-    
     return steps
 
-# =======================================================
-# 2. DFS (DUYỆT CHIỀU SÂU) - ĐÃ DÙNG KEY: structure
-# =======================================================
+# 2. DFS
 def run_dfs(nodes, edges, start_node, end_node=None, is_directed=False):
     steps = []
     adj = build_adjacency_list(nodes, edges, is_directed)
-    
     stack = [start_node]
     visited = [] 
     
@@ -88,26 +72,21 @@ def run_dfs(nodes, edges, start_node, end_node=None, is_directed=False):
         "visitedNodes": [],
         "currentNodeId": start_node,
         "selectedEdges": [],
-        "structure": list(stack) # <-- Dùng key 'structure'
+        "structure": list(stack)
     })
 
     while stack:
         u = stack.pop()
-        
         if u not in visited:
             visited.append(u)
-            
             steps.append({
                 "description": f"Lấy {u} ra khỏi Stack để thăm.",
                 "visitedNodes": list(visited),
                 "currentNodeId": u,
                 "selectedEdges": [],
-                "structure": list(stack) # <-- Dùng key 'structure'
+                "structure": list(stack)
             })
-
-            # Đảo ngược để khi push vào stack, phần tử nhỏ hơn sẽ ở trên cùng (LIFO)
             neighbors = list(reversed(adj.get(u, [])))
-            
             for item in neighbors:
                 v = item['neighbor']
                 if v not in visited:
@@ -117,7 +96,7 @@ def run_dfs(nodes, edges, start_node, end_node=None, is_directed=False):
                         "visitedNodes": list(visited),
                         "currentNodeId": u,
                         "selectedEdges": [{"source": u, "target": v}],
-                        "structure": list(stack) # <-- Dùng key 'structure'
+                        "structure": list(stack)
                     })
 
     steps.append({
@@ -125,26 +104,38 @@ def run_dfs(nodes, edges, start_node, end_node=None, is_directed=False):
         "visitedNodes": list(visited),
         "currentNodeId": None,
         "selectedEdges": [],
-        "structure": list(stack) # <-- Dùng key 'structure' (là mảng rỗng)
+        "structure": list(stack)
     })
-    
     return steps
 
 # =======================================================
-# 3. DIJKSTRA (ĐƯỜNG ĐI NGẮN NHẤT)
+# 3. DIJKSTRA (ĐƯỜNG ĐI NGẮN NHẤT) - ĐÃ CÓ CHECK SỐ ÂM
 # =======================================================
 def run_dijkstra(nodes, edges, start_node, end_node, is_directed=False):
     steps = []
-    adj = build_adjacency_list(nodes, edges, is_directed)
     
+    # --- CHECK AN TOÀN: TRỌNG SỐ ÂM ---
+    # Nếu có cạnh âm, trả về 1 step lỗi hợp lệ để FE không bị trắng màn hình
+    for e in edges:
+        if float(e.get('weight', 0)) < 0:
+            steps.append({
+                "description": "Lỗi Dữ Liệu",
+                "log": "❌ Dijkstra không hỗ trợ trọng số âm! Vui lòng sửa lại đồ thị.",
+                "error": True, # Cờ báo lỗi (FE cần xử lý nếu muốn hiện màu đỏ)
+                "visitedNodes": [],
+                "currentNodeId": None,
+                "selectedEdges": [],
+                "structure": ["LỖI: TRỌNG SỐ ÂM"]
+            })
+            return steps
+
+    adj = build_adjacency_list(nodes, edges, is_directed)
     dist = {node['id']: float('inf') for node in nodes}
     parent = {node['id']: None for node in nodes}
     dist[start_node] = 0
-    
     unvisited = set(node['id'] for node in nodes)
     visited_visual = []
 
-    # Helper để tạo Priority Queue visual (Không phải Queue thật)
     def get_pq_visual(current_unvisited):
         pq = sorted([(n, dist[n]) for n in current_unvisited], key=lambda x: x[1])
         return [f"{n}:{int(d) if d != float('inf') else 'inf'}" for n, d in pq]
@@ -154,15 +145,13 @@ def run_dijkstra(nodes, edges, start_node, end_node, is_directed=False):
         "visitedNodes": [],
         "currentNodeId": start_node,
         "selectedEdges": [],
-        "structure": get_pq_visual(unvisited) # <-- Dùng key 'structure'
+        "structure": get_pq_visual(unvisited)
     })
 
     while unvisited:
         u = min(unvisited, key=lambda node: dist[node])
-        
         if dist[u] == float('inf'):
             break 
-            
         unvisited.remove(u)
         visited_visual.append(u)
 
@@ -171,7 +160,7 @@ def run_dijkstra(nodes, edges, start_node, end_node, is_directed=False):
             "visitedNodes": list(visited_visual),
             "currentNodeId": u,
             "selectedEdges": [],
-            "structure": get_pq_visual(unvisited) # <-- Dùng key 'structure'
+            "structure": get_pq_visual(unvisited)
         })
 
         if u == end_node:
@@ -180,7 +169,6 @@ def run_dijkstra(nodes, edges, start_node, end_node, is_directed=False):
         for item in adj.get(u, []):
             v = item['neighbor']
             weight = float(item['weight'])
-            
             if v in unvisited:
                 new_dist = dist[u] + weight
                 if new_dist < dist[v]:
@@ -191,13 +179,11 @@ def run_dijkstra(nodes, edges, start_node, end_node, is_directed=False):
                         "visitedNodes": list(visited_visual),
                         "currentNodeId": u,
                         "selectedEdges": [{"source": u, "target": v}],
-                        "structure": get_pq_visual(unvisited) # <-- Dùng key 'structure'
+                        "structure": get_pq_visual(unvisited)
                     })
 
-    # --- TRUY VẾT ĐƯỜNG ĐI ---
     path_edges = []
     path_nodes = [] 
-    
     if dist[end_node] != float('inf'):
         curr = end_node
         path_nodes.append(curr)
@@ -207,16 +193,14 @@ def run_dijkstra(nodes, edges, start_node, end_node, is_directed=False):
             curr = prev
             path_nodes.append(curr)
         path_nodes.reverse()
-        
         path_str = " -> ".join(path_nodes)
-        
         steps.append({
             "description": f"Tìm thấy đường đi ngắn nhất: {path_str}. Tổng trọng số = {dist[end_node]}.",
             "visitedNodes": list(visited_visual),
             "currentNodeId": None,
             "selectedEdges": path_edges,
             "pathFound": path_nodes,
-            "structure": get_pq_visual(unvisited) # <-- Dùng key 'structure'
+            "structure": get_pq_visual(unvisited)
         })
     else:
         steps.append({
@@ -224,26 +208,20 @@ def run_dijkstra(nodes, edges, start_node, end_node, is_directed=False):
             "visitedNodes": list(visited_visual),
             "currentNodeId": None,
             "selectedEdges": [],
-            "structure": get_pq_visual(unvisited) # <-- Dùng key 'structure'
+            "structure": get_pq_visual(unvisited)
         })
-
     return steps
 
-# =======================================================
-# 4. KIỂM TRA ĐỒ THỊ 2 PHÍA (BIPARTITE) - ĐÃ DÙNG KEY: structure
-# =======================================================
+# 4. BIPARTITE
 def check_bipartite(nodes, edges, start_node=None, end_node=None, is_directed=False):
     steps = []
     adj = build_adjacency_list(nodes, edges, False) 
-    
     colors = {} 
     visited_visual = []
     
     for node in nodes:
         start_node_id = node['id']
-        if start_node_id in colors:
-            continue
-            
+        if start_node_id in colors: continue
         queue = deque([start_node_id])
         colors[start_node_id] = 0
         visited_visual.append(start_node_id)
@@ -253,27 +231,24 @@ def check_bipartite(nodes, edges, start_node=None, end_node=None, is_directed=Fa
             "visitedNodes": list(visited_visual),
             "currentNodeId": start_node_id,
             "selectedEdges": [],
-            "structure": list(queue) # <-- Dùng key 'structure'
+            "structure": list(queue)
         })
         
         while queue:
             u = queue.popleft()
-            
             for item in adj.get(u, []):
                 v = item['neighbor']
-                
                 if v not in colors:
                     colors[v] = 1 - colors[u] 
                     visited_visual.append(v)
                     queue.append(v)
-                    
                     color_name = "XANH" if colors[v] == 1 else "ĐỎ"
                     steps.append({
                         "description": f"  -> Tô màu đỉnh kề {v} là {color_name} (Ngược màu với {u}).",
                         "visitedNodes": list(visited_visual),
                         "currentNodeId": u,
                         "selectedEdges": [{"source": u, "target": v}],
-                        "structure": list(queue) # <-- Dùng key 'structure'
+                        "structure": list(queue)
                     })
                 elif colors[v] == colors[u]:
                     steps.append({
@@ -281,7 +256,7 @@ def check_bipartite(nodes, edges, start_node=None, end_node=None, is_directed=Fa
                         "visitedNodes": list(visited_visual),
                         "currentNodeId": v, 
                         "selectedEdges": [{"source": u, "target": v}],
-                        "structure": list(queue) # <-- Dùng key 'structure'
+                        "structure": list(queue)
                     })
                     return steps 
 
@@ -290,7 +265,6 @@ def check_bipartite(nodes, edges, start_node=None, end_node=None, is_directed=Fa
         "visitedNodes": list(visited_visual),
         "currentNodeId": None,
         "selectedEdges": [],
-        "structure": list(queue) # <-- Dùng key 'structure'
+        "structure": list(queue)
     })
-    
     return steps

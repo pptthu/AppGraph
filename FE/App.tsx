@@ -9,44 +9,37 @@ import {
 } from './types';
 import { runAlgorithm } from './src/services/api';
 
+// --- HÀM HELPER: Kiểm tra thuật toán có cần trọng số không ---
+const isWeightedAlgorithm = (algo: AlgorithmType) => {
+  return [
+    AlgorithmType.DIJKSTRA,
+    AlgorithmType.PRIM,
+    AlgorithmType.KRUSKAL,
+    AlgorithmType.FORD_FULKERSON
+  ].includes(algo);
+};
+
 const App: React.FC = () => {
-  // ==========================================================
-  // 1. KHAI BÁO STATE
-  // ==========================================================
-  
-  // State cho Modal Sửa Trọng Số
+  // State definitions
   const [editingEdge, setEditingEdge] = useState<Edge | null>(null);
   const [weightInput, setWeightInput] = useState("");
-
-  // --- Graph State ---
-  const [nodes, setNodes] = useState<Node[]>([]); // <-- Sửa thành mảng rỗng []
+  const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
   const [isDirected, setIsDirected] = useState(false);
-
-  // --- UI State ---
   const [currentTool, setTool] = useState<ToolMode>(ToolMode.SELECT);
-
-  // --- Algorithm Selection State ---
   const [selectedAlgo, setSelectedAlgo] = useState<AlgorithmType>(AlgorithmType.NONE);
   const [startNode, setStartNode] = useState<string | null>(null);
   const [endNode, setEndNode] = useState<string | null>(null);
-
-  // --- Algorithm Execution State ---
   const [hasStarted, setHasStarted] = useState(false);
   const [steps, setSteps] = useState<AlgorithmStep[]>([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(5);
-
-  // --- Data View State ---
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [stack, setStack] = useState<string[]>([]);
   const [queue, setQueue] = useState<string[]>([]);
 
-  // ==========================================================
-  // 2. CÁC HÀM XỬ LÝ (ACTIONS)
-  // ==========================================================
-
+  // Actions
   const addLog = (message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') => {
     setLogs(prev => [...prev, { id: Date.now(), step: prev.length + 1, message, type }]);
   };
@@ -79,7 +72,7 @@ const App: React.FC = () => {
     const newEdges: Edge[] = [];
     const rows = 3;
     const cols = 4;
-    let charCode = 65; // 'A'
+    let charCode = 65; 
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -119,7 +112,6 @@ const App: React.FC = () => {
     addLog("Đã tạo đồ thị ngẫu nhiên.", 'success');
   };
 
-  // Hàm xóa (Node hoặc Edge)
   const handleDelete = (type: 'node' | 'edge', id: string) => {
     if (type === 'node') {
       setNodes(nodes.filter(n => n.id !== id));
@@ -131,44 +123,77 @@ const App: React.FC = () => {
     }
   };
 
-  // Hàm xử lý Click vào Cạnh
+  // --- LOGIC TỰ ĐỘNG XỬ LÝ KHI ĐỔI THUẬT TOÁN ---
+  useEffect(() => {
+    if (selectedAlgo === AlgorithmType.NONE) return;
+
+    const needsWeight = isWeightedAlgorithm(selectedAlgo);
+
+    if (!needsWeight) {
+        // Tự động xóa trọng số (về 0)
+        setEdges(eds => eds.map(e => ({ ...e, weight: 0 })));
+        
+        if (currentTool === ToolMode.EDIT_WEIGHT) {
+            setTool(ToolMode.SELECT);
+        }
+        addLog(`Thuật toán ${selectedAlgo} không dùng trọng số. Đã ẩn trọng số & khóa chức năng sửa.`, 'warning');
+    }
+  }, [selectedAlgo]);
+
   const handleEdgeClick = (edge: Edge) => {
     if (currentTool === ToolMode.DELETE) {
       handleDelete('edge', edge.id);
     }
     else if (currentTool === ToolMode.EDIT_WEIGHT) {
+      if (selectedAlgo !== AlgorithmType.NONE && !isWeightedAlgorithm(selectedAlgo)) {
+          alert(`Thuật toán ${selectedAlgo} không hỗ trợ trọng số!`);
+          setTool(ToolMode.SELECT);
+          return;
+      }
       setEditingEdge(edge);
       setWeightInput(edge.weight.toString());
     }
   };
 
-  // Hàm Lưu Trọng Số (cho Modal)
+  // --- HÀM SỬA TRỌNG SỐ (ĐÃ THÊM VALIDATE SỐ ÂM) ---
   const saveWeight = () => {
     if (editingEdge) {
       const num = parseFloat(weightInput);
-      if (!isNaN(num)) {
-        setEdges(prev => prev.map(e => e.id === editingEdge.id ? { ...e, weight: num } : e));
-        addLog(`Đã đổi trọng số cạnh ${editingEdge.source}-${editingEdge.target} thành ${num}`, 'info');
-        setEditingEdge(null);
-      } else {
+      
+      if (isNaN(num)) {
         alert("Vui lòng nhập số hợp lệ!");
+        return;
       }
+
+      const isNegative = num < 0;
+
+      // Validate Dijkstra
+      if (selectedAlgo === AlgorithmType.DIJKSTRA && isNegative) {
+          alert("Lỗi: Dijkstra không hỗ trợ trọng số âm! Vui lòng nhập số >= 0.");
+          return;
+      }
+
+      // Validate Ford-Fulkerson
+      if (selectedAlgo === AlgorithmType.FORD_FULKERSON && isNegative) {
+          alert("Lỗi: Dung lượng luồng (Capacity) không được âm! Vui lòng nhập số >= 0.");
+          return;
+      }
+
+      setEdges(prev => prev.map(e => e.id === editingEdge.id ? { ...e, weight: num } : e));
+      addLog(`Đã đổi trọng số cạnh ${editingEdge.source}-${editingEdge.target} thành ${num}`, 'info');
+      setEditingEdge(null);
     }
   };
 
-  // --- Xử lý Lưu File ---
   const handleSaveGraph = () => {
     const graphData = {
-      nodes: nodes.map(n => ({ ...n, state: NodeState.DEFAULT })), // Reset trạng thái màu khi lưu
+      nodes: nodes.map(n => ({ ...n, state: NodeState.DEFAULT })), 
       edges: edges.map(e => ({ ...e, state: EdgeState.DEFAULT })),
       isDirected
     };
-
     const jsonString = JSON.stringify(graphData, null, 2);
     const blob = new Blob([jsonString], { type: "application/json" });
     const href = URL.createObjectURL(blob);
-
-    // Tạo thẻ a ảo để kích hoạt tải xuống
     const link = document.createElement('a');
     link.href = href;
     link.download = `graph-${Date.now()}.json`;
@@ -176,36 +201,21 @@ const App: React.FC = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(href);
-
     addLog("Đã lưu đồ thị thành công.", 'success');
   };
 
-  // ==========================================================
-  // 3. LOGIC CHẠY MÔ PHỎNG
-  // ==========================================================
+  const handleClearWeights = () => {
+      setEdges(eds => eds.map(e => ({ ...e, weight: 0 }))); 
+      addLog("Đã xóa trọng số (về 0) cho đồ thị không trọng số.", 'info');
+  };
 
   const handleRunSimulation = async () => {
-    // 1. Kiểm tra Ràng buộc
-    if (isDirected && (selectedAlgo === AlgorithmType.PRIM || selectedAlgo === AlgorithmType.KRUSKAL)) {
-      return;
-    }
-    // Lỗi: Ford-Fulkerson chạy trên Vô hướng (MỚI THÊM)
-    if (!isDirected && selectedAlgo === AlgorithmType.FORD_FULKERSON) {
-      return; // Chặn
-    }
+    if (isDirected && (selectedAlgo === AlgorithmType.PRIM || selectedAlgo === AlgorithmType.KRUSKAL)) return;
+    if (!isDirected && selectedAlgo === AlgorithmType.FORD_FULKERSON) return; 
 
     try {
-      // --- GỌI API TỪ BACKEND ---
       addLog(`Đang gửi yêu cầu thuật toán ${selectedAlgo} lên server...`, 'info');
-
-      const realSteps = await runAlgorithm(
-        selectedAlgo,
-        nodes,
-        edges,
-        isDirected,
-        startNode || undefined,
-        endNode || undefined
-      );
+      const realSteps = await runAlgorithm(selectedAlgo, nodes, edges, isDirected, startNode || undefined, endNode || undefined);
 
       if (realSteps && realSteps.length > 0) {
         setSteps(realSteps);
@@ -216,118 +226,79 @@ const App: React.FC = () => {
       } else {
         addLog("Thuật toán chạy xong nhưng không trả về bước nào (có thể do đồ thị rỗng hoặc lỗi logic).", 'warning');
       }
-
     } catch (error: any) {
       console.error("Lỗi gọi API:", error);
-      // Hiển thị lỗi chi tiết từ Backend nếu có
       const errorMessage = error.response?.data?.message || error.message || "Lỗi không xác định";
       addLog(`Lỗi Server: ${errorMessage}`, 'error');
     }
   };
 
-  // ==========================================================
-  // 4. EFFECTS
-  // ==========================================================
-
-  // Effect 1: Chỉ phụ trách việc tăng bước nhảy (Timer)
+  // Effects
   useEffect(() => {
     let interval: any;
     if (isPlaying && hasStarted) {
       interval = setInterval(() => {
-        setCurrentStepIndex(prev => {
-          // Nếu chưa đến cuối thì tăng, đến cuối rồi thì giữ nguyên
-          return prev < steps.length - 1 ? prev + 1 : prev;
-        });
+        setCurrentStepIndex(prev => { return prev < steps.length - 1 ? prev + 1 : prev; });
       }, 1500);
     }
     return () => clearInterval(interval);
   }, [isPlaying, hasStarted, steps.length]);
 
-  // Effect 2: Phụ trách kiểm tra khi nào thì Dừng và Log (Chỉ chạy khi index thay đổi)
   useEffect(() => {
     if (hasStarted && steps.length > 0 && currentStepIndex === steps.length - 1 && isPlaying) {
-      setIsPlaying(false); // Dừng chạy
-      addLog("Mô phỏng hoàn tất.", 'success'); // Ghi log 1 lần duy nhất
+      setIsPlaying(false);
+      addLog("Mô phỏng hoàn tất.", 'success'); 
     }
   }, [currentStepIndex, hasStarted, steps.length, isPlaying]);
 
-  // Effect cập nhật màu sắc Đồ thị VÀ Cấu trúc dữ liệu
   useEffect(() => {
     if (!hasStarted || steps.length === 0) return;
-
     const currentStep = steps[currentStepIndex];
-
-    // 1. Cập nhật màu Node
     setNodes(nds => nds.map(n => {
       let newState = NodeState.DEFAULT;
-      if (currentStep.visitedNodes.includes(n.id)) {
-        newState = NodeState.VISITED;
-      }
-      if (n.id === currentStep.currentNodeId) {
-        newState = NodeState.PROCESSING;
-      }
+      if (currentStep.visitedNodes.includes(n.id)) newState = NodeState.VISITED;
+      if (n.id === currentStep.currentNodeId) newState = NodeState.PROCESSING;
       return { ...n, state: newState };
     }));
-
-    // 2. Cập nhật màu Edge
     setEdges(eds => eds.map(e => {
       const isSelected = currentStep.selectedEdges.some(se =>
         (se.source === e.source && se.target === e.target) ||
         (!isDirected && se.source === e.target && se.target === e.source)
       );
-
-      return {
-        ...e,
-        state: isSelected ? EdgeState.TRAVERSED : EdgeState.DEFAULT
-      };
+      return { ...e, state: isSelected ? EdgeState.TRAVERSED : EdgeState.DEFAULT };
     }));
-
-    // 3. CẬP NHẬT CẤU TRÚC DỮ LIỆU (QUAN TRỌNG: Đã thêm mới)
-    // Backend gửi về field "structure", ta cần đẩy nó vào state queue hoặc stack
     if (currentStep.structure) {
       if (selectedAlgo === AlgorithmType.DFS) {
-        setStack(currentStep.structure);
-        setQueue([]);
+        setStack(currentStep.structure); setQueue([]);
       } else {
-        // Tất cả thuật toán khác (BFS, Prim, Kruskal, Ford...) đều dùng state 'queue' để hiển thị
-        setQueue(currentStep.structure);
-        setStack([]);
+        setQueue(currentStep.structure); setStack([]);
       }
     } else {
-      setStack([]);
-      setQueue([]);
+      setStack([]); setQueue([]);
     }
-
   }, [currentStepIndex, hasStarted, steps, isDirected, selectedAlgo]);
 
-  // ==========================================================
-  // 5. CÁC HÀM VẼ ĐỒ THỊ (NODE, EDGE)
-  // ==========================================================
+  const handleNodeMove = (id: string, x: number, y: number) => {
+    setNodes(nodes.map(n => n.id === id ? { ...n, x, y } : n));
+  };
 
   const handleNodeAdd = (x: number, y: number) => {
     const newId = String.fromCharCode(65 + nodes.length);
     setNodes([...nodes, { id: newId, x, y, state: NodeState.DEFAULT }]);
   };
 
+  const isWeightDisabled = selectedAlgo !== AlgorithmType.NONE && !isWeightedAlgorithm(selectedAlgo);
+
   const handleEdgeAdd = (sourceId: string, targetId: string) => {
     if (sourceId === targetId) return;
-    if (edges.some(e => e.source === sourceId && e.target === targetId)) return;
-    setEdges([...edges, {
-      id: `e-${sourceId}-${targetId}`,
-      source: sourceId,
-      target: targetId,
-      weight: 1,
-      state: EdgeState.DEFAULT
-    }]);
+    if (edges.some(e => 
+        (e.source === sourceId && e.target === targetId) ||
+        (!isDirected && e.source === targetId && e.target === sourceId)
+    )) return;
+    
+    const defaultWeight = isWeightDisabled ? 0 : 1;
+    setEdges([...edges, { id: `e-${sourceId}-${targetId}`, source: sourceId, target: targetId, weight: defaultWeight, state: EdgeState.DEFAULT }]);
   };
-
-  const handleNodeMove = (id: string, x: number, y: number) => {
-    setNodes(nodes.map(n => n.id === id ? { ...n, x, y } : n));
-  };
-
-  // ==========================================================
-  // 6. RENDER
-  // ==========================================================
 
   return (
     <div className="flex h-screen w-screen bg-slate-100 text-slate-900 overflow-hidden font-sans">
@@ -338,8 +309,9 @@ const App: React.FC = () => {
         setTool={setTool}
         onClear={handleClear}
         onRandom={handleRandom}
-        // Truyền 2 hàm mới
         onSave={handleSaveGraph}
+        onClearWeights={handleClearWeights}
+        isWeightDisabled={isWeightDisabled} 
       />
 
       <div className="flex-1 flex flex-col h-full relative">
@@ -353,20 +325,11 @@ const App: React.FC = () => {
             onNodeSelect={(id) => console.log('select', id)}
             onNodeMove={handleNodeMove}
             onEdgeAdd={handleEdgeAdd}
-            onDelete={(type, id) => handleDelete(type, id)} // Sửa ở đây để gọi đúng hàm
+            onDelete={(type, id) => handleDelete(type, id)}
             onEdgeClick={handleEdgeClick}
           />
         </div>
-
-        <DataView
-          nodes={nodes}
-          edges={edges}
-          isDirected={isDirected}
-          logs={logs}
-          stack={stack}
-          queue={queue}
-          currentAlgo={selectedAlgo}
-        />
+        <DataView nodes={nodes} edges={edges} isDirected={isDirected} logs={logs} stack={stack} queue={queue} currentAlgo={selectedAlgo} />
       </div>
 
       <ControlPanel
@@ -389,35 +352,15 @@ const App: React.FC = () => {
         onReset={handleReset}
       />
 
-      {/* MODAL SỬA TRỌNG SỐ */}
       {editingEdge && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl w-80 animate-in fade-in zoom-in duration-200">
             <h3 className="text-lg font-bold mb-4 text-slate-800">Sửa Trọng Số</h3>
-            <p className="text-sm text-slate-600 mb-2">
-              Cạnh: <span className="font-bold">{editingEdge.source}</span> - <span className="font-bold">{editingEdge.target}</span>
-            </p>
-            <input
-              type="number"
-              value={weightInput}
-              onChange={(e) => setWeightInput(e.target.value)}
-              className="w-full p-2 border border-slate-300 rounded mb-4 focus:ring-2 focus:ring-indigo-500 outline-none"
-              autoFocus
-              onKeyDown={(e) => e.key === 'Enter' && saveWeight()}
-            />
+            <p className="text-sm text-slate-600 mb-2">Cạnh: <span className="font-bold">{editingEdge.source}</span> - <span className="font-bold">{editingEdge.target}</span></p>
+            <input type="number" value={weightInput} onChange={(e) => setWeightInput(e.target.value)} className="w-full p-2 border border-slate-300 rounded mb-4 focus:ring-2 focus:ring-indigo-500 outline-none" autoFocus onKeyDown={(e) => e.key === 'Enter' && saveWeight()} />
             <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setEditingEdge(null)}
-                className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded font-medium"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={saveWeight}
-                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 font-medium"
-              >
-                Lưu
-              </button>
+              <button onClick={() => setEditingEdge(null)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded font-medium">Hủy</button>
+              <button onClick={saveWeight} className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 font-medium">Lưu</button>
             </div>
           </div>
         </div>
@@ -425,5 +368,4 @@ const App: React.FC = () => {
     </div>
   );
 };
-
 export default App;

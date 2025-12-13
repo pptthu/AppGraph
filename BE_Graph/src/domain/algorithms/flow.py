@@ -3,6 +3,20 @@ import copy
 
 def run_ford_fulkerson(nodes, edges, start_node_id, end_node_id, is_directed=True):
     steps = []
+
+    # --- CHECK AN TOÀN: SỐ ÂM ---
+    for e in edges:
+        if float(e.get('capacity', e.get('weight', 1))) < 0:
+            steps.append({
+                "description": "Lỗi Dữ Liệu",
+                "log": "❌ Ford-Fulkerson không hỗ trợ dung lượng âm! Vui lòng sửa lại.",
+                "error": True,
+                "visitedNodes": [],
+                "currentNodeId": None,
+                "selectedEdges": [],
+                "structure": []
+            })
+            return steps
     
     # 1. Cấu trúc dữ liệu
     graph = {str(n['id']): [] for n in nodes}
@@ -49,9 +63,10 @@ def run_ford_fulkerson(nodes, edges, start_node_id, end_node_id, is_directed=Tru
     steps.append({
         "description": "Khởi tạo",
         "log": f"Bắt đầu tìm luồng cực đại từ {start_node_id} -> {end_node_id}",
-        "visitedNodes": [start_node_id, end_node_id], # Key mới
-        "selectedEdges": [],                           # Key mới
-        "currentNodeId": start_node_id
+        "visitedNodes": [start_node_id, end_node_id],
+        "selectedEdges": [],
+        "currentNodeId": start_node_id,
+        "structure": []
     })
 
     parent = {}
@@ -76,7 +91,6 @@ def run_ford_fulkerson(nodes, edges, start_node_id, end_node_id, is_directed=Tru
             current_flow[(p, s)] += path_flow
             current_flow[(s, p)] -= path_flow
             
-            # Label hiển thị dạng "3/10"
             info = f"{int(current_flow[(p,s)])}/{int(capacity[(p,s)])}"
             highlight_edges.append({"source": p, "target": s, "label": info})
             s = p
@@ -86,11 +100,11 @@ def run_ford_fulkerson(nodes, edges, start_node_id, end_node_id, is_directed=Tru
         steps.append({
             "description": f"Tìm thấy đường tăng luồng (Flow +{path_flow})",
             "log": f"Đường đi: {'->'.join(path_nodes)} | Tăng thêm: {path_flow} | Tổng luồng: {max_flow}",
-            # --- CHUẨN HÓA KEY MỚI ---
-            "visitedNodes": path_nodes,      # highlightNodes -> visitedNodes
-            "selectedEdges": highlight_edges, # highlightEdges -> selectedEdges
-            "pathFound": path_nodes,         # Để tô đậm đường đi
-            "currentNodeId": end_node_id
+            "visitedNodes": path_nodes,
+            "selectedEdges": highlight_edges,
+            "pathFound": path_nodes,
+            "currentNodeId": end_node_id,
+            "structure": []
         })
 
     # Kết thúc
@@ -99,7 +113,8 @@ def run_ford_fulkerson(nodes, edges, start_node_id, end_node_id, is_directed=Tru
         "log": f"✅ TỔNG LUỒNG CỰC ĐẠI = {max_flow}",
         "visitedNodes": [], 
         "selectedEdges": [],
-        "currentNodeId": None
+        "currentNodeId": None,
+        "structure": []
     })
     
     return steps
