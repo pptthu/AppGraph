@@ -1,7 +1,7 @@
 import heapq
 
 # =======================================================
-# 0. HÀM KIỂM TRA LIÊN THÔNG (CONNECTIVITY CHECK)
+# 0. HÀM KIỂM TRA LIÊN THÔNG 
 # =======================================================
 def check_connectivity(nodes, edges):
     if not nodes: return True
@@ -35,7 +35,7 @@ def check_connectivity(nodes, edges):
     return len(visited) == len(nodes)
 
 # =======================================================
-# 1. THUẬT TOÁN PRIM (FIX LỖI SORT & THÊM TỔNG TRỌNG SỐ)
+# 1. THUẬT TOÁN PRIM 
 # =======================================================
 
 def get_prim_heap_visual(min_heap):
@@ -63,11 +63,11 @@ def run_prim(nodes, edges, start_node, is_directed=False):
         })
         return steps
 
-    # 2. Chuẩn bị dữ liệu (ÉP KIỂU FLOAT QUAN TRỌNG)
+    # 2. Chuẩn bị dữ liệu 
     adj = {str(n['id']): [] for n in nodes}
     for e in edges:
         u, v = str(e['source']), str(e['target'])
-        # Ép kiểu float ngay tại đây để tránh lỗi so sánh chuỗi "10" < "5"
+        # Ép kiểu float ngay tại đây để tránh lỗi so sánh chuỗi
         try:
             w = float(e.get('weight', 1))
         except:
@@ -142,7 +142,7 @@ def run_prim(nodes, edges, start_node, is_directed=False):
 
 
 # =======================================================
-# 2. THUẬT TOÁN KRUSKAL (FIX LỖI SORT & THÊM TỔNG TRỌNG SỐ)
+# 2. THUẬT TOÁN KRUSKAL 
 # =======================================================
 
 def get_kruskal_list_visual(sorted_edges, current_idx):
@@ -177,7 +177,7 @@ def run_kruskal(nodes, edges, is_directed=False):
     
     for e in edges:
         u, v = str(e['source']), str(e['target'])
-        # ÉP KIỂU FLOAT ĐỂ SORT ĐÚNG (-20 < 5 < 10)
+        # ÉP KIỂU FLOAT ĐỂ SORT 
         try:
             w = float(e.get('weight', 1))
         except:
@@ -188,7 +188,7 @@ def run_kruskal(nodes, edges, is_directed=False):
             unique_edges.append({'u': u, 'v': v, 'w': w})
             seen_edges.add(edge_key)
             
-    # Sắp xếp: Số thực sẽ so sánh đúng (-20 luôn nhỏ hơn 10)
+    # Sắp xếp: Số thực sẽ so sánh đúng 
     sorted_edges = sorted(unique_edges, key=lambda x: x['w'])
     
     steps.append({
@@ -223,9 +223,8 @@ def run_kruskal(nodes, edges, is_directed=False):
 
         if union(u, v):
             mst_edges.append({"source": u, "target": v})
-            total_weight += w # <-- Cộng trọng số
+            total_weight += w #  Cộng trọng số
             
-            # Update visual nodes
             current_nodes = list(set([e['source'] for e in mst_edges] + [e['target'] for e in mst_edges]))
 
             steps.append({

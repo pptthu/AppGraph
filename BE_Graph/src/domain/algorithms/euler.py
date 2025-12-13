@@ -125,7 +125,7 @@ def count_reachable(u, adj):
     return count
 
 # ==========================================
-# 2. THUẬT TOÁN FLEURY (FIX LOG SƯ PHẠM)
+# 2. THUẬT TOÁN FLEURY 
 # ==========================================
 
 def run_fleury(nodes, edges, is_directed=False, user_start_node=None):
@@ -194,7 +194,7 @@ def run_fleury(nodes, edges, is_directed=False, user_start_node=None):
         
         path.append(next_v) 
         
-        # LOG CẢI TIẾN: Rõ ràng hơn về lý do chọn cầu
+        # LOG 
         log_detail = "Chọn cạnh an toàn (không phải cầu)."
         if is_bridge_edge:
              log_detail = forced_msg if forced_msg else "Buộc phải đi qua cầu."
@@ -223,7 +223,7 @@ def run_fleury(nodes, edges, is_directed=False, user_start_node=None):
     return steps
 
 # ==========================================
-# 3. THUẬT TOÁN HIERHOLZER (FIX LỖI THIẾU BACKTRACK)
+# 3. THUẬT TOÁN HIERHOLZER 
 # ==========================================
 
 def run_hierholzer(nodes, edges, is_directed=False, user_start_node=None):
@@ -255,13 +255,13 @@ def run_hierholzer(nodes, edges, is_directed=False, user_start_node=None):
         adj[u].append(v)
         if not is_directed: adj[v].append(u)
 
-    # Sort để thứ tự duyệt ổn định (giúp dễ debug)
+    # Sort để thứ tự duyệt ổn định 
     for u in adj: adj[u].sort()
 
     circuit = [] 
     stack = [start_node]
     
-    # --- LOGIC MỚI: ĐẢM BẢO GHI NHẬT KÝ MỌI BƯỚC ---
+    # --- LOGIC
     while stack:
         u = stack[-1] 
         
@@ -289,7 +289,6 @@ def run_hierholzer(nodes, edges, is_directed=False, user_start_node=None):
             circuit.append(finished_node)
             
             # Ghi log Backtrack cho TẤT CẢ các đỉnh (bao gồm đỉnh trung gian)
-            # Code cũ có thể bị lỗi logic hiển thị ở đây, code này đảm bảo ghi lại mọi lần pop
             
             current_stack_top = stack[-1] if stack else None
             

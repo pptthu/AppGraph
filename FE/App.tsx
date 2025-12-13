@@ -155,7 +155,7 @@ const App: React.FC = () => {
     }
   };
 
-  // --- HÀM SỬA TRỌNG SỐ (ĐÃ THÊM VALIDATE SỐ ÂM) ---
+  // --- HÀM SỬA TRỌNG SỐ  ---
   const saveWeight = () => {
     if (editingEdge) {
       const num = parseFloat(weightInput);

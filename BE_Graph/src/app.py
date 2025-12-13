@@ -1,17 +1,15 @@
 import os
-import sys # <--- Thêm cái này để in Log
+import sys 
 from src.create_app import create_app
-# 1. IMPORT HÀM SETUP_CORS TỪ FILE BẠN VỪA TẠO
-# (Giả sử file đó bạn lưu là src/cors.py)
 from src.cors import setup_cors 
 
 # Khởi tạo ứng dụng
 app = create_app()
 
 # ==================================================
-# 2. GỌI HÀM CẤU HÌNH CORS NGAY TẠI ĐÂY (BẮT BUỘC)
+# 2. GỌI HÀM CẤU HÌNH CORS NGAY TẠI ĐÂY 
 # ==================================================
-print(">>> DANG CAI DAT CORS (FORCE ALLOW ALL)...", file=sys.stdout)
+print(">>> DANG CAI DAT CORS", file=sys.stdout)
 setup_cors(app)
 print(">>> DA CAI DAT CORS XONG!", file=sys.stdout)
 # ==================================================

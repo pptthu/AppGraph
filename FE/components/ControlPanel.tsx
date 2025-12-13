@@ -50,7 +50,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
     if (isDirected && (selectedAlgo === AlgorithmType.PRIM || selectedAlgo === AlgorithmType.KRUSKAL)) {
       return "Thuật toán này chỉ hỗ trợ Đồ thị Vô hướng.";
     }
-    // 2. Ford-Fulkerson & Fleury/Hierholzer (thường) chạy trên Có hướng hoặc có luật riêng
+    // 2. Ford-Fulkerson & Fleury/Hierholzer chạy trên Có hướng hoặc có luật riêng
     // Ở đây ta chặn Ford-Fulkerson trên Vô hướng
     if (!isDirected && selectedAlgo === AlgorithmType.FORD_FULKERSON) {
       return "Thuật toán này chỉ hỗ trợ Đồ thị Có hướng.";

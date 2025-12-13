@@ -14,7 +14,7 @@ interface ToolbarProps {
   onRandom: () => void;
   onSave: () => void;
   onClearWeights: () => void;
-  isWeightDisabled: boolean; // <-- KHAI BÁO PROP MỚI
+  isWeightDisabled: boolean; 
 }
 
 export const Toolbar: React.FC<ToolbarProps> = ({
@@ -26,7 +26,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onRandom,
   onSave,
   onClearWeights,
-  isWeightDisabled // <-- LẤY PROP RA
+  isWeightDisabled 
 }) => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);

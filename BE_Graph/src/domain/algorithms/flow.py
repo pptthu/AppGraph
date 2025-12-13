@@ -86,7 +86,7 @@ def run_ford_fulkerson(nodes, edges, start_node_id, end_node_id, is_directed=Tru
             s = p
         
         path_nodes.reverse()
-        path_str = " -> ".join(path_nodes) # VD: "A -> B -> D"
+        path_str = " -> ".join(path_nodes) 
 
         # 4b. Cập nhật luồng
         s = end_node_id
@@ -97,19 +97,18 @@ def run_ford_fulkerson(nodes, edges, start_node_id, end_node_id, is_directed=Tru
             current_flow[(p, s)] += path_flow
             current_flow[(s, p)] -= path_flow
             
-            # Label trên cạnh: Flow/Capacity (VD: 3/5)
+            # Label trên cạnh: Flow/Capacity 
             info = f"{int(current_flow[(p,s)])}/{int(capacity[(p,s)])}"
             highlight_edges.append({"source": p, "target": s, "label": info})
             s = p
 
         max_flow += path_flow
         
-        # --- 4c. TỐI ƯU HIỂN THỊ (QUAN TRỌNG) ---
-        # Đưa thông tin chi tiết vào `description` vì Web chỉ hiển thị cái này
+        # --- 4c. TỐI ƯU HIỂN THỊ  ---
         step_desc = f"#{path_counter}. Tăng {path_flow}: {path_str}"
         
         steps.append({
-            "description": step_desc, # <--- Dòng này sẽ hiện rõ ràng trên Web
+            "description": step_desc, 
             "log": f"⚡ Tìm thấy đường: {path_str} (Tăng {path_flow})",
             "visitedNodes": path_nodes,
             "selectedEdges": highlight_edges,
@@ -120,7 +119,7 @@ def run_ford_fulkerson(nodes, edges, start_node_id, end_node_id, is_directed=Tru
 
     # --- 5. KẾT THÚC ---
     steps.append({
-        "description": f"Hoàn thành. Tổng luồng cực đại = {max_flow}", # <--- Hiện kết quả cuối cùng
+        "description": f"Hoàn thành. Tổng luồng cực đại = {max_flow}",
         "log": f"✅ Tổng luồng cực đại = {max_flow}",
         "visitedNodes": [], 
         "selectedEdges": [],

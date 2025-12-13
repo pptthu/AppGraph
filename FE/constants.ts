@@ -18,19 +18,13 @@ export const EDGE_COLORS = {
 export const ALGORITHMS = [
   // Option mặc định
   { value: 'NONE', label: '-- Chọn thuật toán --' },
-  
-  // Phần Cơ bản (Thịnh làm)
   { value: 'BFS', label: 'Duyệt theo chiều rộng (BFS)' },
   { value: 'DFS', label: 'Duyệt theo chiều sâu (DFS)' },
   { value: 'DIJKSTRA', label: 'Đường đi ngắn nhất (Dijkstra)' },
   { value: 'BIPARTITE', label: 'Kiểm tra đồ thị hai phía (Bipartite)' },
-
-  // Phần Nâng cao (Linh làm & Leader làm)
   { value: 'PRIM', label: 'Cây khung nhỏ nhất (Prim)' },
   { value: 'KRUSKAL', label: 'Cây khung nhỏ nhất (Kruskal)' },
   { value: 'FORD_FULKERSON', label: 'Luồng cực đại (Ford-Fulkerson)' },
-  
-  // Phần Bonus (Làm sau)
   { value: 'FLEURY', label: 'Chu trình Euler (Fleury)' },
   { value: 'HIERHOLZER', label: 'Chu trình Euler (Hierholzer)' },
 ];

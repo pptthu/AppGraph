@@ -5,9 +5,7 @@ import sys
 from src.domain.algorithms.basic import run_bfs, run_dfs, run_dijkstra, check_bipartite
 from src.domain.algorithms.mst import run_prim, run_kruskal
 from src.domain.algorithms.flow import run_ford_fulkerson
-# Import thuật toán Euler mới
 from src.domain.algorithms.euler import run_fleury, run_hierholzer
-# from src.domain.algorithms.euler import run_hierholzer # Bỏ comment nếu đã có file
 
 algo_bp = Blueprint('algo', __name__)
 
@@ -30,7 +28,7 @@ def solve_algorithm():
         print(f"Nodes count: {len(nodes)}", file=sys.stdout)
         print(f"Edges count: {len(edges)}", file=sys.stdout)
 
-        # --- QUAN TRỌNG: CHUẨN HÓA DỮ LIỆU ---
+        # ---  CHUẨN HÓA DỮ LIỆU ---
         
         # 1. Ép kiểu Start/End về string
         start_node = str(data.get('startNode')) if data.get('startNode') is not None else None
@@ -46,7 +44,7 @@ def solve_algorithm():
             e['source'] = str(e['source'])
             e['target'] = str(e['target'])
             
-            # Lấy giá trị trọng số từ Frontend (nó có thể tên là 'weight', 'label', hoặc 'value')
+            # Lấy giá trị trọng số từ Frontend 
             raw_weight = e.get('weight') or e.get('label') or e.get('value') or 1
             
             try:

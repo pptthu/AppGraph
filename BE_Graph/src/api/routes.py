@@ -1,5 +1,4 @@
 from flask import Flask
-# Import Blueprint từ controller
 from src.api.controllers.algo_controller import algo_bp
 
 def register_routes(app: Flask):
