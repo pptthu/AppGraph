@@ -276,6 +276,26 @@ const App: React.FC = () => {
     } else {
       setStack([]); setQueue([]);
     }
+    // --- 4. CẬP NHẬT LOG 
+    // Logic: Nếu bước hiện tại có log và log đó chưa được ghi, hãy ghi vào bảng
+    if (currentStep.log) {
+        setLogs(prevLogs => {
+            // Kiểm tra xem log cuối cùng có trùng nội dung không để tránh spam
+            const lastLog = prevLogs[prevLogs.length - 1];
+            if (lastLog && lastLog.message === currentStep.log) {
+                return prevLogs;
+            }
+            
+            // Thêm log mới vào danh sách
+            return [...prevLogs, {
+                id: Date.now(),
+                step: currentStepIndex + 1,
+                message: currentStep.log,
+                type: currentStep.error ? 'error' : 'info' // Nếu backend báo error=True thì hiện màu đỏ
+            }];
+        });
+    }
+
   }, [currentStepIndex, hasStarted, steps, isDirected, selectedAlgo]);
 
   const handleNodeMove = (id: string, x: number, y: number) => {

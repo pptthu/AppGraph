@@ -89,10 +89,10 @@ def solve_algorithm():
              steps = run_ford_fulkerson(nodes, edges, start_node, end_node, True)
 
         elif algo_type == 'FLEURY':
-             steps = run_fleury(nodes, edges, is_directed)
+             steps = run_fleury(nodes, edges, is_directed, start_node)
 
         elif algo_type == 'HIERHOLZER':
-             steps = run_hierholzer(nodes, edges, is_directed)
+             steps = run_hierholzer(nodes, edges, is_directed, start_node)
 
         else:
             return jsonify({'success': False, 'message': "Thuật toán không hỗ trợ"}), 400

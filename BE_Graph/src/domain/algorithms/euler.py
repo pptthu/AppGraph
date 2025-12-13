@@ -1,13 +1,51 @@
 import copy
 
 # ==========================================
-# 1. HÀM PHỤ TRỢ (KIỂM TRA & CHECK CẦU)
+# 1. HÀM PHỤ TRỢ (KIỂM TRA & CHECK CẦU & LIÊN THÔNG)
 # ==========================================
 
-# (Giữ nguyên get_euler_status, is_bridge, count_reachable)
-def get_euler_status(nodes, edges, is_directed):
+def check_connectivity(nodes, edges, is_directed):
+    if not nodes: return True
+    if not edges: return True
+    
+    relevant_nodes = set()
+    adj = {str(n['id']): [] for n in nodes}
+    
+    for e in edges:
+        u, v = str(e['source']), str(e['target'])
+        adj[u].append(v)
+        if not is_directed:
+            adj[v].append(u)
+        else:
+            adj[v].append(u) 
+            
+        relevant_nodes.add(u)
+        relevant_nodes.add(v)
+        
+    if not relevant_nodes: return True
+    
+    start = list(relevant_nodes)[0]
+    visited = {start}
+    queue = [start]
+    
+    while queue:
+        u = queue.pop(0)
+        for v in adj[u]:
+            if v in relevant_nodes and v not in visited:
+                visited.add(v)
+                queue.append(v)
+                
+    if len(visited) != len(relevant_nodes):
+        return False
+        
+    return True
+
+def get_euler_status(nodes, edges, is_directed, user_start_node=None):
     if not nodes: return None, None, "Đồ thị rỗng."
     
+    if not check_connectivity(nodes, edges, is_directed):
+        return None, None, "Đồ thị không liên thông (Bị chia cắt thành nhiều cụm cạnh rời nhau)."
+
     adj = {str(n['id']): [] for n in nodes}
     in_degree = {str(n['id']): 0 for n in nodes}
     out_degree = {str(n['id']): 0 for n in nodes}
@@ -22,40 +60,44 @@ def get_euler_status(nodes, edges, is_directed):
             degree[u] += 1
             degree[v] += 1
 
-    start_node = str(nodes[0]['id']) 
-    
     if not is_directed:
         odd_nodes = [nid for nid, deg in degree.items() if deg % 2 != 0]
         if len(odd_nodes) == 0:
+            start = user_start_node if user_start_node and degree.get(user_start_node, 0) > 0 else str(nodes[0]['id'])
             for nid, deg in degree.items():
-                if deg > 0: return "CIRCUIT", nid, None
-            return "CIRCUIT", start_node, None 
+                if deg > 0 and not user_start_node: 
+                    start = nid
+                    break
+            return "CIRCUIT", start, None
         elif len(odd_nodes) == 2:
-            return "PATH", odd_nodes[0], None 
+            if user_start_node and user_start_node not in odd_nodes:
+                return None, None, f"Đây là Đường đi Euler. Bạn BẮT BUỘC phải chọn xuất phát từ 1 trong 2 đỉnh bậc lẻ: {odd_nodes}."
+            start = user_start_node if user_start_node else odd_nodes[0]
+            return "PATH", start, None
         else:
             return None, None, f"Có {len(odd_nodes)} đỉnh bậc lẻ. Đồ thị Euler chỉ cho phép 0 hoặc 2 đỉnh bậc lẻ."
-
     else:
         start_nodes = []
         end_nodes = []
         imbalanced = 0
-        
         for nid in [str(n['id']) for n in nodes]:
             diff = out_degree[nid] - in_degree[nid]
-            if diff == 1:
-                start_nodes.append(nid)
-            elif diff == -1:
-                end_nodes.append(nid)
-            elif diff != 0:
-                imbalanced += 1
+            if diff == 1: start_nodes.append(nid)
+            elif diff == -1: end_nodes.append(nid)
+            elif diff != 0: imbalanced += 1
         
         if imbalanced == 0 and len(start_nodes) == 0 and len(end_nodes) == 0:
+            start = user_start_node if user_start_node and out_degree.get(user_start_node, 0) > 0 else str(nodes[0]['id'])
             for nid in [str(n['id']) for n in nodes]:
-                if out_degree[nid] > 0: return "CIRCUIT", nid, None
-            return "CIRCUIT", start_node, None
-            
+                if out_degree[nid] > 0 and not user_start_node: 
+                    start = nid
+                    break
+            return "CIRCUIT", start, None
         elif len(start_nodes) == 1 and len(end_nodes) == 1 and imbalanced == 0:
-            return "PATH", start_nodes[0], None
+            required_start = start_nodes[0]
+            if user_start_node and user_start_node != required_start:
+                 return None, None, f"Với đồ thị có hướng này, bạn BẮT BUỘC phải xuất phát từ đỉnh: {required_start}."
+            return "PATH", required_start, None
         else:
             return None, None, "Vi phạm điều kiện cân bằng In/Out degree của Euler có hướng."
 
@@ -83,28 +125,27 @@ def count_reachable(u, adj):
     return count
 
 # ==========================================
-# 2. THUẬT TOÁN FLEURY (FIX LỖI CÚ PHÁP & LOG)
+# 2. THUẬT TOÁN FLEURY (FIX LOG SƯ PHẠM)
 # ==========================================
 
-def run_fleury(nodes, edges, is_directed=False):
+def run_fleury(nodes, edges, is_directed=False, user_start_node=None):
     steps = []
     
-    euler_type, start_node, error = get_euler_status(nodes, edges, is_directed)
+    euler_type, start_node, error = get_euler_status(nodes, edges, is_directed, user_start_node)
     
     if error:
         steps.append({
-            "description": "Lỗi", 
+            "description": "Lỗi Euler", 
             "log": f"❌ {error}", 
             "error": True,
             "visitedNodes": [], "selectedEdges": []
         })
         return steps
         
-    # Bước 1: Khởi tạo
     path = [start_node]
     steps.append({
-        "description": f"Bắt đầu Fleury: {euler_type} thỏa mãn. Bắt đầu từ {start_node}",
-        "log": f"✅ Đồ thị thỏa mãn ({euler_type}).",
+        "description": f"Bắt đầu Fleury ({euler_type}) từ {start_node}",
+        "log": f"✅ Điều kiện thỏa mãn. Dạng: {euler_type}. Xuất phát: {start_node}",
         "visitedNodes": [start_node],
         "currentNodeId": start_node,
         "selectedEdges": [],
@@ -122,49 +163,45 @@ def run_fleury(nodes, edges, is_directed=False):
     total_edges = len(edges)
     edges_traversed = 0
 
-    # Bước 2: Vòng lặp
     while edges_traversed < total_edges:
         if not adj[curr]: break 
 
         next_v = -1
         neighbors = adj[curr]
-        
-        # KHỞI TẠO BIẾN TRƯỚC VÒNG LẶP/KIỂM TRA
         is_bridge_edge = False
+        forced_msg = ""
         
         if len(neighbors) == 1:
-            # Trường hợp 1: Chỉ còn 1 cạnh, phải đi
             next_v = neighbors[0]
-            is_bridge_edge = True 
+            is_bridge_edge = True
+            forced_msg = "Chỉ còn 1 cạnh (Cầu), bắt buộc phải đi."
         else:
-            # Trường hợp 2: Có nhiều hơn 1 cạnh
             if not is_directed:
-                # 2a. Ưu tiên cạnh KHÔNG phải cầu (non-bridge)
                 for v in neighbors:
                     if not is_bridge(curr, v, adj):
                         next_v = v
                         is_bridge_edge = False
                         break
             
-            # 2b. Nếu là đồ thị có hướng HOẶC (vẫn là vô hướng & không tìm thấy non-bridge)
             if next_v == -1: 
-                next_v = neighbors[0] # Chọn cạnh đầu tiên (chắc chắn là cầu hoặc là lựa chọn duy nhất)
+                next_v = neighbors[0]
                 is_bridge_edge = True
+                forced_msg = "Tất cả lựa chọn đều là cầu -> Chọn đại 1 cái."
         
-        # --- THỰC HIỆN BƯỚC ĐI ---
         adj[curr].remove(next_v)
         if not is_directed: adj[next_v].remove(curr)
         edges_traversed += 1
         
         path.append(next_v) 
         
-        log_detail = "Áp dụng Quy tắc Fleury: Chọn cạnh KHÔNG là cầu."
+        # LOG CẢI TIẾN: Rõ ràng hơn về lý do chọn cầu
+        log_detail = "Chọn cạnh an toàn (không phải cầu)."
         if is_bridge_edge:
-             log_detail = "Buộc phải đi qua cầu (hoặc chỉ còn 1 đường, hoặc đồ thị có hướng)."
+             log_detail = forced_msg if forced_msg else "Buộc phải đi qua cầu."
         
         steps.append({
-            "description": f"Xét tại {curr}. Chọn cạnh {curr} -> {next_v}. ({'Cầu' if is_bridge_edge else 'Không cầu'})",
-            "log": f"Đi: {curr} -> {next_v}. {log_detail}",
+            "description": f"Đi: {curr} -> {next_v}. ({'Cầu' if is_bridge_edge else 'OK'})",
+            "log": f"Chọn cạnh {curr}-{next_v}. {log_detail}",
             "visitedNodes": [curr, next_v],
             "selectedEdges": [{"source": curr, "target": next_v}],
             "currentNodeId": next_v,
@@ -174,10 +211,9 @@ def run_fleury(nodes, edges, is_directed=False):
         
         curr = next_v
 
-    # Bước 3: Hoàn thành
     steps.append({
-        "description": "Hoàn thành duyệt",
-        "log": f"🏁 CHU TRÌNH EULER: {' -> '.join(path)}. Hoàn thành tất cả {total_edges} cạnh.",
+        "description": "Hoàn thành",
+        "log": f"🏁 KẾT QUẢ: {' -> '.join(path)}. Đã đi hết {total_edges} cạnh.",
         "pathFound": path,
         "visitedNodes": path,
         "selectedEdges": [], 
@@ -187,24 +223,24 @@ def run_fleury(nodes, edges, is_directed=False):
     return steps
 
 # ==========================================
-# 3. THUẬT TOÁN HIERHOLZER (FIX LOG & STRUCTURE)
+# 3. THUẬT TOÁN HIERHOLZER (FIX LỖI THIẾU BACKTRACK)
 # ==========================================
 
-def run_hierholzer(nodes, edges, is_directed=False):
+def run_hierholzer(nodes, edges, is_directed=False, user_start_node=None):
     steps = []
     
-    euler_type, start_node, error = get_euler_status(nodes, edges, is_directed)
+    euler_type, start_node, error = get_euler_status(nodes, edges, is_directed, user_start_node)
+    
     if error:
         steps.append({
-            "description": "Lỗi", "log": f"❌ {error}", "error": True,
+            "description": "Lỗi Euler", "log": f"❌ {error}", "error": True,
             "visitedNodes": [], "selectedEdges": []
         })
         return steps
 
-    # Bước 1: Khởi tạo
     steps.append({
-        "description": "Khởi tạo Hierholzer",
-        "log": f"✅ Bắt đầu Hierholzer (dùng Stack) từ {start_node}",
+        "description": f"Bắt đầu Hierholzer ({euler_type})",
+        "log": f"✅ Thỏa mãn {euler_type}. Stack khởi tạo: [{start_node}]",
         "visitedNodes": [start_node],
         "currentNodeId": start_node,
         "selectedEdges": [],
@@ -212,20 +248,25 @@ def run_hierholzer(nodes, edges, is_directed=False):
         "structure": [start_node] 
     })
 
+    # Dùng bản sao danh sách kề để xóa cạnh dần
     adj = {str(n['id']): [] for n in nodes}
     for e in edges:
         u, v = str(e['source']), str(e['target'])
         adj[u].append(v)
         if not is_directed: adj[v].append(u)
 
+    # Sort để thứ tự duyệt ổn định (giúp dễ debug)
+    for u in adj: adj[u].sort()
+
     circuit = [] 
     stack = [start_node]
     
-    # Bước 2: Vòng lặp (DFS)
+    # --- LOGIC MỚI: ĐẢM BẢO GHI NHẬT KÝ MỌI BƯỚC ---
     while stack:
         u = stack[-1] 
         
         if adj.get(u): 
+            # Còn cạnh để đi -> DFS Forward
             v = adj[u].pop(0) 
             
             if not is_directed:
@@ -234,8 +275,8 @@ def run_hierholzer(nodes, edges, is_directed=False):
             stack.append(v) 
             
             steps.append({
-                "description": f"Duyệt sâu: {u} -> {v}. Đẩy {v} vào Stack.",
-                "log": f"Tiếp tục DFS. Cạnh {u}-{v} được chọn.",
+                "description": f"DFS: {u} -> {v}",
+                "log": f"Đi tiếp {u}->{v}. Stack: {stack}",
                 "visitedNodes": [u, v],
                 "selectedEdges": [{"source": u, "target": v}],
                 "currentNodeId": v,
@@ -243,25 +284,30 @@ def run_hierholzer(nodes, edges, is_directed=False):
                 "structure": list(stack) 
             })
         else:
+            # Hết cạnh -> Backtrack
             finished_node = stack.pop()
             circuit.append(finished_node)
             
+            # Ghi log Backtrack cho TẤT CẢ các đỉnh (bao gồm đỉnh trung gian)
+            # Code cũ có thể bị lỗi logic hiển thị ở đây, code này đảm bảo ghi lại mọi lần pop
+            
+            current_stack_top = stack[-1] if stack else None
+            
             steps.append({
-                "description": f"Backtrack: Đỉnh {finished_node} hết cạnh. Đưa vào Chu trình.",
-                "log": f"Quay lui, nối chu trình con vào {finished_node}.",
+                "description": f"Backtrack: {finished_node}",
+                "log": f"Đỉnh {finished_node} hết cạnh -> Quay lui về {current_stack_top}. Thêm {finished_node} vào Chu trình.",
                 "visitedNodes": [finished_node],
-                "currentNodeId": stack[-1] if stack else None,
-                "pathFound": list(reversed(circuit)),
+                "currentNodeId": current_stack_top,
+                "pathFound": list(reversed(circuit)), # Hiển thị chu trình đang hình thành
                 "selectedEdges": [],
                 "structure": list(stack) 
             })
 
     final_path = list(reversed(circuit))
     
-    # Bước 3: Kết thúc
     if len(final_path) - 1 < len(edges):
          steps.append({
-            "description": "Cảnh báo",
+            "description": "Cảnh báo Lỗi: Đồ thị không liên thông",
             "log": "⚠️ Đồ thị không liên thông hoàn toàn (Có cạnh bị cô lập).",
             "error": True,
             "visitedNodes": [], "selectedEdges": []
@@ -269,7 +315,7 @@ def run_hierholzer(nodes, edges, is_directed=False):
     else:
         steps.append({
             "description": "Hoàn thành",
-            "log": f"🏁 CHU TRÌNH EULER: {' -> '.join(final_path)}. Tổng số cạnh: {len(edges)}.",
+            "log": f"🏁 KẾT QUẢ: {' -> '.join(final_path)}",
             "pathFound": final_path,
             "visitedNodes": final_path,
             "selectedEdges": [], 

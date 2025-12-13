@@ -23,7 +23,7 @@ export const ALGORITHMS = [
   { value: 'BFS', label: 'Duyệt theo chiều rộng (BFS)' },
   { value: 'DFS', label: 'Duyệt theo chiều sâu (DFS)' },
   { value: 'DIJKSTRA', label: 'Đường đi ngắn nhất (Dijkstra)' },
-  { value: 'BIPARTITE', label: 'Kiểm tra Đồ thị 2 phía' },
+  { value: 'BIPARTITE', label: 'Kiểm tra đồ thị hai phía (Bipartite)' },
 
   // Phần Nâng cao (Linh làm & Leader làm)
   { value: 'PRIM', label: 'Cây khung nhỏ nhất (Prim)' },
