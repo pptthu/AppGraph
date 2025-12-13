@@ -1,12 +1,15 @@
 from flask import Flask
 from flask_cors import CORS
+import sys
 
 def setup_cors(app: Flask):
     """
     Thiết lập CORS: Cho phép TẤT CẢ các nguồn truy cập.
-    Dùng cấu hình này để đảm bảo Frontend trên Render/Netlify không bị chặn.
     """
-    # Force cho phép tất cả (*) bất kể config là gì
+    # --- THÊM DÒNG NÀY ĐỂ SOI LOG ---
+    print("!!! KICH HOAT CORS MOI - CHO PHEP TAT CA (ALLOW ALL) !!!", file=sys.stdout)
+    # --------------------------------
+    
     CORS(
         app,
         resources={r"/*": {"origins": "*"}}, 
