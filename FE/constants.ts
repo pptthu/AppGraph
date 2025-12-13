@@ -35,18 +35,3 @@ export const ALGORITHMS = [
   { value: 'HIERHOLZER', label: 'Chu trình Euler (Hierholzer)' },
 ];
 
-// Mock Data: Đồ thị mẫu để test nhanh mà không cần vẽ lại từ đầu
-export const INITIAL_NODES = [
-  { id: 'S', x: 100, y: 250, state: NodeState.DEFAULT }, // Đổi A thành S cho giống bài toán luồng
-  { id: '1', x: 300, y: 100, state: NodeState.DEFAULT },
-  { id: '2', x: 300, y: 400, state: NodeState.DEFAULT },
-  { id: 'T', x: 500, y: 250, state: NodeState.DEFAULT },
-];
-
-export const INITIAL_EDGES = [
-  { id: 'e1', source: 'S', target: '1', weight: 10, state: EdgeState.DEFAULT },
-  { id: 'e2', source: 'S', target: '2', weight: 5, state: EdgeState.DEFAULT },
-  { id: 'e3', source: '1', target: '2', weight: 15, state: EdgeState.DEFAULT },
-  { id: 'e4', source: '1', target: 'T', weight: 10, state: EdgeState.DEFAULT },
-  { id: 'e5', source: '2', target: 'T', weight: 10, state: EdgeState.DEFAULT },
-];

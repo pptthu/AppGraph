@@ -5,6 +5,8 @@ import sys
 from src.domain.algorithms.basic import run_bfs, run_dfs, run_dijkstra, check_bipartite
 from src.domain.algorithms.mst import run_prim, run_kruskal
 from src.domain.algorithms.flow import run_ford_fulkerson
+# Import thuật toán Euler mới
+from src.domain.algorithms.euler import run_fleury, run_hierholzer
 # from src.domain.algorithms.euler import run_hierholzer # Bỏ comment nếu đã có file
 
 algo_bp = Blueprint('algo', __name__)
@@ -86,7 +88,11 @@ def solve_algorithm():
              # Flow luôn cần đồ thị có hướng
              steps = run_ford_fulkerson(nodes, edges, start_node, end_node, True)
 
-        # elif algo_type == 'HIERHOLZER': ...
+        elif algo_type == 'FLEURY':
+             steps = run_fleury(nodes, edges, is_directed)
+
+        elif algo_type == 'HIERHOLZER':
+             steps = run_hierholzer(nodes, edges, is_directed)
 
         else:
             return jsonify({'success': False, 'message': "Thuật toán không hỗ trợ"}), 400

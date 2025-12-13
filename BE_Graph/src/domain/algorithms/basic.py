@@ -1,7 +1,6 @@
 from collections import deque
-import math
 
-# --- HÀM BỔ TRỢ: Tạo danh sách kề từ dữ liệu thô ---
+# --- HÀM BỔ TRỢ: Tạo danh sách kề ---
 def build_adjacency_list(nodes, edges, is_directed):
     adj = {node['id']: [] for node in nodes}
     for e in edges:
@@ -22,7 +21,7 @@ def build_adjacency_list(nodes, edges, is_directed):
     return adj
 
 # =======================================================
-# 1. BFS (DUYỆT CHIỀU RỘNG)
+# 1. BFS (DUYỆT CHIỀU RỘNG) - ĐÃ DÙNG KEY: structure
 # =======================================================
 def run_bfs(nodes, edges, start_node, end_node=None, is_directed=False):
     steps = []
@@ -31,26 +30,23 @@ def run_bfs(nodes, edges, start_node, end_node=None, is_directed=False):
     queue = deque([start_node])
     visited = [start_node] 
     
-    # Bước 1: Khởi tạo (u, v chưa tồn tại ở đây -> selectedEdges rỗng)
     steps.append({
-        "description": f"Khởi tạo BFS: Đưa {start_node} vào hàng đợi",
+        "description": f"Bắt đầu BFS từ {start_node}. Đưa {start_node} vào hàng đợi.",
         "visitedNodes": list(visited),
         "currentNodeId": start_node,
         "selectedEdges": [],
-        "structure": list(queue)
+        "structure": list(queue) # <-- Dùng key 'structure'
     })
 
     while queue:
-        current_structure = list(queue)
         u = queue.popleft()
         
-        # Bước 2: Lấy ra khỏi hàng đợi
         steps.append({
-            "description": f"Đang xét đỉnh {u} (Lấy ra khỏi Queue)",
+            "description": f"Lấy {u} ra khỏi hàng đợi để xét.",
             "visitedNodes": list(visited),
             "currentNodeId": u,
             "selectedEdges": [],
-            "structure": current_structure
+            "structure": list(queue) # <-- Dùng key 'structure'
         })
 
         for item in adj.get(u, []):
@@ -59,27 +55,26 @@ def run_bfs(nodes, edges, start_node, end_node=None, is_directed=False):
                 visited.append(v)
                 queue.append(v)
                 
-                # Bước 3: Thăm láng giềng (u và v đã tồn tại -> tô màu cạnh u-v)
                 steps.append({
-                    "description": f"  -> Thăm đỉnh kề {v}, thêm vào Queue",
+                    "description": f"  -> Tìm thấy {v} (kề {u}), đưa vào hàng đợi.",
                     "visitedNodes": list(visited),
                     "currentNodeId": u,
                     "selectedEdges": [{"source": u, "target": v}],
-                    "structure": list(queue)
+                    "structure": list(queue) # <-- Dùng key 'structure'
                 })
 
     steps.append({
-        "description": "Hàng đợi rỗng. Hoàn tất BFS.",
+        "description": "Hàng đợi rỗng. Hoàn tất thuật toán BFS.",
         "visitedNodes": list(visited),
         "currentNodeId": None,
         "selectedEdges": [],
-        "structure": []
+        "structure": list(queue) # <-- Dùng key 'structure' (là mảng rỗng)
     })
     
     return steps
 
 # =======================================================
-# 2. DFS (DUYỆT CHIỀU SÂU)
+# 2. DFS (DUYỆT CHIỀU SÂU) - ĐÃ DÙNG KEY: structure
 # =======================================================
 def run_dfs(nodes, edges, start_node, end_node=None, is_directed=False):
     steps = []
@@ -88,52 +83,49 @@ def run_dfs(nodes, edges, start_node, end_node=None, is_directed=False):
     stack = [start_node]
     visited = [] 
     
-    # Bước 1: Khởi tạo (u, v chưa có -> selectedEdges rỗng)
     steps.append({
-        "description": f"Khởi tạo DFS: Đưa {start_node} vào Stack",
+        "description": f"Bắt đầu DFS từ {start_node}. Đưa {start_node} vào Stack.",
         "visitedNodes": [],
         "currentNodeId": start_node,
         "selectedEdges": [],
-        "structure": list(stack)
+        "structure": list(stack) # <-- Dùng key 'structure'
     })
 
     while stack:
-        current_structure = list(stack)
         u = stack.pop()
         
         if u not in visited:
             visited.append(u)
             
-            # Bước 2: Thăm đỉnh
             steps.append({
-                "description": f"Thăm đỉnh {u} (Lấy ra khỏi Stack)",
+                "description": f"Lấy {u} ra khỏi Stack để thăm.",
                 "visitedNodes": list(visited),
                 "currentNodeId": u,
                 "selectedEdges": [],
-                "structure": current_structure
+                "structure": list(stack) # <-- Dùng key 'structure'
             })
 
+            # Đảo ngược để khi push vào stack, phần tử nhỏ hơn sẽ ở trên cùng (LIFO)
             neighbors = list(reversed(adj.get(u, [])))
             
             for item in neighbors:
                 v = item['neighbor']
                 if v not in visited:
                     stack.append(v)
-                    # Bước 3: Đẩy vào stack (u và v đã có -> tô màu cạnh u-v)
                     steps.append({
-                        "description": f"  -> Đẩy đỉnh kề {v} vào Stack",
+                        "description": f"  -> Đẩy {v} (kề {u}) vào Stack chờ duyệt.",
                         "visitedNodes": list(visited),
                         "currentNodeId": u,
                         "selectedEdges": [{"source": u, "target": v}],
-                        "structure": list(stack)
+                        "structure": list(stack) # <-- Dùng key 'structure'
                     })
 
     steps.append({
-        "description": "Stack rỗng. Hoàn tất DFS.",
+        "description": "Stack rỗng. Hoàn tất thuật toán DFS.",
         "visitedNodes": list(visited),
         "currentNodeId": None,
         "selectedEdges": [],
-        "structure": []
+        "structure": list(stack) # <-- Dùng key 'structure' (là mảng rỗng)
     })
     
     return steps
@@ -152,20 +144,17 @@ def run_dijkstra(nodes, edges, start_node, end_node, is_directed=False):
     unvisited = set(node['id'] for node in nodes)
     visited_visual = []
 
-    # Helper để tạo string hiển thị Priority Queue giả lập: ["A: 0", "B: inf", ...]
-    def get_pq_visual():
-        # Lấy các đỉnh chưa thăm, sắp xếp theo khoảng cách
-        pq = sorted([(n, dist[n]) for n in unvisited], key=lambda x: x[1])
-        # Chỉ lấy những đỉnh có khoảng cách < inf để hiển thị cho gọn
-        return [f"{n}:{d}" for n, d in pq if d != float('inf')]
-    
-    # Bước 1: Khởi tạo (u, v chưa có -> selectedEdges rỗng)
+    # Helper để tạo Priority Queue visual (Không phải Queue thật)
+    def get_pq_visual(current_unvisited):
+        pq = sorted([(n, dist[n]) for n in current_unvisited], key=lambda x: x[1])
+        return [f"{n}:{int(d) if d != float('inf') else 'inf'}" for n, d in pq]
+
     steps.append({
-        "description": f"Khởi tạo: Khoảng cách tại {start_node} = 0, các đỉnh khác = ∞",
+        "description": f"Khởi tạo: Khoảng cách tại {start_node} = 0, các đỉnh khác = ∞.",
         "visitedNodes": [],
         "currentNodeId": start_node,
         "selectedEdges": [],
-        "structure": get_pq_visual()
+        "structure": get_pq_visual(unvisited) # <-- Dùng key 'structure'
     })
 
     while unvisited:
@@ -177,23 +166,15 @@ def run_dijkstra(nodes, edges, start_node, end_node, is_directed=False):
         unvisited.remove(u)
         visited_visual.append(u)
 
-        # Bước 2: Chọn đỉnh xét
         steps.append({
-            "description": f"Chọn đỉnh {u} (dist={dist[u]}) để xét",
+            "description": f"Chọn đỉnh {u} có khoảng cách nhỏ nhất ({dist[u]}) để xét.",
             "visitedNodes": list(visited_visual),
             "currentNodeId": u,
             "selectedEdges": [],
-            "structure": get_pq_visual()
+            "structure": get_pq_visual(unvisited) # <-- Dùng key 'structure'
         })
 
         if u == end_node:
-            steps.append({
-                "description": f"Đã đến đích {end_node}!",
-                "visitedNodes": list(visited_visual),
-                "currentNodeId": u,
-                "selectedEdges": [],
-                
-            })
             break
 
         for item in adj.get(u, []):
@@ -205,42 +186,51 @@ def run_dijkstra(nodes, edges, start_node, end_node, is_directed=False):
                 if new_dist < dist[v]:
                     dist[v] = new_dist
                     parent[v] = u
-                    # Bước 3: Cập nhật khoảng cách (u và v đã có -> tô màu cạnh)
                     steps.append({
-                        "description": f"  -> Cập nhật {v}: dist giảm xuống {new_dist}",
+                        "description": f"  -> Cập nhật {v}: KC mới = {dist[u]} + {weight} = {new_dist}.",
                         "visitedNodes": list(visited_visual),
                         "currentNodeId": u,
                         "selectedEdges": [{"source": u, "target": v}],
-                        "structure": get_pq_visual()
+                        "structure": get_pq_visual(unvisited) # <-- Dùng key 'structure'
                     })
 
     # --- TRUY VẾT ĐƯỜNG ĐI ---
     path_edges = []
+    path_nodes = [] 
+    
     if dist[end_node] != float('inf'):
         curr = end_node
+        path_nodes.append(curr)
         while parent[curr] is not None:
             prev = parent[curr]
             path_edges.append({"source": prev, "target": curr})
             curr = prev
+            path_nodes.append(curr)
+        path_nodes.reverse()
+        
+        path_str = " -> ".join(path_nodes)
         
         steps.append({
-            "description": f"Hoàn tất! Tổng trọng số = {dist[end_node]}",
+            "description": f"Tìm thấy đường đi ngắn nhất: {path_str}. Tổng trọng số = {dist[end_node]}.",
             "visitedNodes": list(visited_visual),
             "currentNodeId": None,
-            "selectedEdges": path_edges 
+            "selectedEdges": path_edges,
+            "pathFound": path_nodes,
+            "structure": get_pq_visual(unvisited) # <-- Dùng key 'structure'
         })
     else:
         steps.append({
-            "description": f"Không tìm thấy đường đi từ {start_node} đến {end_node}",
+            "description": f"Không tìm thấy đường đi từ {start_node} đến {end_node}.",
             "visitedNodes": list(visited_visual),
             "currentNodeId": None,
-            "selectedEdges": []
+            "selectedEdges": [],
+            "structure": get_pq_visual(unvisited) # <-- Dùng key 'structure'
         })
 
     return steps
 
 # =======================================================
-# 4. KIỂM TRA ĐỒ THỊ 2 PHÍA (BIPARTITE)
+# 4. KIỂM TRA ĐỒ THỊ 2 PHÍA (BIPARTITE) - ĐÃ DÙNG KEY: structure
 # =======================================================
 def check_bipartite(nodes, edges, start_node=None, end_node=None, is_directed=False):
     steps = []
@@ -259,11 +249,11 @@ def check_bipartite(nodes, edges, start_node=None, end_node=None, is_directed=Fa
         visited_visual.append(start_node_id)
         
         steps.append({
-            "description": f"Bắt đầu kiểm tra từ {start_node_id}. Gán màu ĐỎ (0)",
+            "description": f"Xét thành phần liên thông mới từ {start_node_id}. Gán màu ĐỎ (0).",
             "visitedNodes": list(visited_visual),
             "currentNodeId": start_node_id,
             "selectedEdges": [],
-            "structure": list(queue)
+            "structure": list(queue) # <-- Dùng key 'structure'
         })
         
         while queue:
@@ -279,28 +269,28 @@ def check_bipartite(nodes, edges, start_node=None, end_node=None, is_directed=Fa
                     
                     color_name = "XANH" if colors[v] == 1 else "ĐỎ"
                     steps.append({
-                        "description": f"  -> Đỉnh kề {v} chưa tô: Gán màu {color_name} ({colors[v]})",
+                        "description": f"  -> Tô màu đỉnh kề {v} là {color_name} (Ngược màu với {u}).",
                         "visitedNodes": list(visited_visual),
                         "currentNodeId": u,
                         "selectedEdges": [{"source": u, "target": v}],
-                        "structure": list(queue)
+                        "structure": list(queue) # <-- Dùng key 'structure'
                     })
                 elif colors[v] == colors[u]:
                     steps.append({
-                        "description": f"PHÁT HIỆN MÂU THUẪN! Đỉnh {u} và {v} cùng màu.",
+                        "description": f"❌ MÂU THUẪN: Đỉnh {u} và {v} kề nhau nhưng cùng màu! Không phải đồ thị 2 phía.",
                         "visitedNodes": list(visited_visual),
                         "currentNodeId": v, 
                         "selectedEdges": [{"source": u, "target": v}],
-                        "structure": [] # Queue rỗng khi dừng
+                        "structure": list(queue) # <-- Dùng key 'structure'
                     })
                     return steps 
 
     steps.append({
-        "description": "Đã duyệt xong. ĐÂY LÀ đồ thị 2 phía hợp lệ.",
+        "description": "✅ Đã duyệt xong toàn bộ. Không có mâu thuẫn. ĐÂY LÀ ĐỒ THỊ 2 PHÍA.",
         "visitedNodes": list(visited_visual),
         "currentNodeId": None,
         "selectedEdges": [],
-        "structure": [] # Queue rỗng khi xong
+        "structure": list(queue) # <-- Dùng key 'structure'
     })
     
     return steps

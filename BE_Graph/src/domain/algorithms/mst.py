@@ -1,8 +1,16 @@
 import heapq
 
 # =======================================================
-# 1. THUẬT TOÁN PRIM
+# 1. THUẬT TOÁN PRIM (ĐÃ THÊM KEY: structure)
 # =======================================================
+
+# Helper: Hiển thị trạng thái Heap (Priority Queue)
+def get_prim_heap_visual(min_heap):
+    # Lấy các cạnh trong heap, sắp xếp lại để hiển thị (w, u, v)
+    temp = sorted(min_heap, key=lambda x: x[0])
+    # Format: "w: u-v"
+    return [f"{int(w)}: {u}-{v}" for w, u, v in temp]
+
 def run_prim(nodes, edges, start_node, is_directed=False):
     steps = []
     
@@ -21,11 +29,6 @@ def run_prim(nodes, edges, start_node, is_directed=False):
     visited = set()     
     min_heap = []       
     
-    # Helper: Hiển thị trạng thái Heap (Priority Queue)
-    def get_heap_visual():
-        # Hiển thị tối đa 5 phần tử đầu của Heap: "w: u-v"
-        return [f"{w}: {u}-{v}" for w, u, v in min_heap[:5]]
-    
     # Bắt đầu từ start_node
     for neighbor, weight in adj[start_node]:
         heapq.heappush(min_heap, (weight, start_node, neighbor))
@@ -37,7 +40,7 @@ def run_prim(nodes, edges, start_node, is_directed=False):
         "visitedNodes": list(visited),
         "currentNodeId": start_node,
         "selectedEdges": [],
-        "structure": get_heap_visual() # <--- Trả về Heap
+        "structure": get_prim_heap_visual(min_heap) # <-- ĐÃ THÊM
     })
 
     # 3. Vòng lặp chính
@@ -45,12 +48,10 @@ def run_prim(nodes, edges, start_node, is_directed=False):
         if len(visited) == len(nodes):
             break
 
-        # Snapshot Heap TRƯỚC khi pop để hiển thị cho người dùng thấy có gì trong đó
-        current_structure = get_heap_visual()
-
         weight, u, v = heapq.heappop(min_heap)
 
         if v in visited:
+            # Cạnh bị loại do tạo chu trình (nối vào đỉnh đã xét)
             continue
 
         visited.add(v)
@@ -61,11 +62,12 @@ def run_prim(nodes, edges, start_node, is_directed=False):
             "visitedNodes": list(visited),
             "currentNodeId": v,
             "selectedEdges": list(mst_edges),
-            "structure": current_structure # <--- Hiển thị Heap tại thời điểm xét
+            "structure": get_prim_heap_visual(min_heap) # <-- ĐÃ THÊM
         })
 
         for next_node, w in adj[v]:
             if next_node not in visited:
+                # Đẩy cạnh mới vào heap
                 heapq.heappush(min_heap, (w, v, next_node))
 
     # Bước kết thúc
@@ -74,15 +76,24 @@ def run_prim(nodes, edges, start_node, is_directed=False):
         "visitedNodes": list(visited),
         "currentNodeId": None,
         "selectedEdges": list(mst_edges),
-        "structure": [] # Heap rỗng hoặc đã xong
+        "structure": get_prim_heap_visual(min_heap) # <-- ĐÃ THÊM (Heap rỗng)
     })
 
     return steps
 
 
 # =======================================================
-# 2. THUẬT TOÁN KRUSKAL
+# 2. THUẬT TOÁN KRUSKAL (ĐÃ THÊM KEY: structure)
 # =======================================================
+
+# Helper: Hiển thị danh sách cạnh đang chờ xét (Sorted List)
+def get_kruskal_list_visual(sorted_edges, current_idx):
+    # Chỉ hiển thị 5 cạnh đầu tiên chưa xét
+    remaining = sorted_edges[current_idx:]
+    # Format: "w: u-v"
+    return [f"{int(e['w'])}: {e['u']}-{e['v']}" for e in remaining[:5]]
+
+
 def run_kruskal(nodes, edges, is_directed=False):
     steps = []
     mst_edges = []
@@ -101,18 +112,12 @@ def run_kruskal(nodes, edges, is_directed=False):
     # Sắp xếp tăng dần theo trọng số
     sorted_edges = sorted(unique_edges, key=lambda x: x['w'])
     
-    # Helper: Hiển thị danh sách cạnh đang chờ xét (Sorted List)
-    def get_list_visual(current_idx):
-        # Lấy các cạnh từ vị trí hiện tại trở đi (tối đa 5 cạnh)
-        remaining = sorted_edges[current_idx:]
-        return [f"{e['w']}: {e['u']}-{e['v']}" for e in remaining[:5]]
-    
     steps.append({
         "description": "Sắp xếp tất cả các cạnh theo trọng số tăng dần.",
         "visitedNodes": [],
         "currentNodeId": None,
         "selectedEdges": [],
-        "structure": get_list_visual(0) # <--- Trả về danh sách đã sort
+        "structure": get_kruskal_list_visual(sorted_edges, 0) # <-- ĐÃ THÊM
     })
 
     # 2. Khởi tạo DSU (Union-Find)
@@ -121,12 +126,15 @@ def run_kruskal(nodes, edges, is_directed=False):
     def find(i):
         if parent[i] == i:
             return i
-        return find(parent[i])
+        # Path compression (tối ưu)
+        parent[i] = find(parent[i])
+        return parent[i]
 
     def union(i, j):
         root_i = find(i)
         root_j = find(j)
         if root_i != root_j:
+            # Union by rank/size (tối ưu)
             parent[root_i] = root_j
             return True
         return False
@@ -135,8 +143,7 @@ def run_kruskal(nodes, edges, is_directed=False):
     for idx, edge in enumerate(sorted_edges):
         u, v, w = edge['u'], edge['v'], edge['w']
         
-        # Lấy danh sách cạnh còn lại (từ idx hiện tại)
-        current_structure = get_list_visual(idx)
+        current_structure = get_kruskal_list_visual(sorted_edges, idx + 1)
         
         if union(u, v):
             mst_edges.append({"source": u, "target": v})
@@ -148,7 +155,7 @@ def run_kruskal(nodes, edges, is_directed=False):
                 "visitedNodes": visited_visual,
                 "currentNodeId": None, 
                 "selectedEdges": list(mst_edges),
-                "structure": current_structure # <--- Cập nhật structure
+                "structure": current_structure # <-- ĐÃ THÊM
             })
         else:
              steps.append({
@@ -156,7 +163,7 @@ def run_kruskal(nodes, edges, is_directed=False):
                 "visitedNodes": list(set([e['source'] for e in mst_edges] + [e['target'] for e in mst_edges])),
                 "currentNodeId": None,
                 "selectedEdges": list(mst_edges),
-                "structure": current_structure # <--- Cập nhật structure
+                "structure": current_structure # <-- ĐÃ THÊM
             })
 
     # Bước kết thúc
@@ -165,7 +172,7 @@ def run_kruskal(nodes, edges, is_directed=False):
         "visitedNodes": list(set([e['source'] for e in mst_edges] + [e['target'] for e in mst_edges])),
         "currentNodeId": None,
         "selectedEdges": list(mst_edges),
-        "structure": []
+        "structure": [] # <--- ĐÃ THÊM (Danh sách rỗng)
     })
 
     return steps
